@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Insights Pro</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body { font-family: 'Arial', sans-serif; background: linear-gradient(to bottom, #f8f9fa, #e9ecef); color: #333; }
+        .hero { background: #007bff; color: white; padding: 60px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .cta-button { background: #28a745; color: white; padding: 12px 25px; border-radius: 5px; text-decoration: none; font-weight: bold; }
+        .cta-button:hover { background: #218838; color: white; }
+        .features { padding: 40px 20px; text-align: center; }
+        .features h2 { margin-bottom: 20px; }
+        .feature-item { margin: 15px 0; }
+        .signup { padding: 40px 20px; background: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .signup h2 { text-align: center; margin-bottom: 20px; }
+        form { max-width: 500px; margin: 0 auto; }
+        label { font-weight: bold; margin-top: 10px; }
+        input { width: 100%; padding: 10px; margin: 5px 0 15px; border: 1px solid #ccc; border-radius: 4px; }
+        #report-output { margin-top: 20px; padding: 20px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 5px; display: none; }
+        #loading { display: none; color: #007bff; font-weight: bold; text-align: center; }
+        footer { background: #343a40; color: white; padding: 20px; text-align: center; margin-top: 40px; }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <header class="hero">
+        <h1>SEO Insights Pro</h1>
+        <p>Real-Time SEO & Performance Reports for Your Website</p>
+        <a href="#signup" class="cta-button">Try It Now</a>
+    </header>
+
+    <!-- Features Section -->
+    <section class="features">
+        <h2>Why SEO Insights Pro?</h2>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 feature-item">
+                    <h4>Real Data</h4>
+                    <p>Fetches live performance metrics from Google.</p>
+                </div>
+                <div class="col-md-4 feature-item">
+                    <h4>Instant Reports</h4>
+                    <p>Get insights in seconds, no sign-up needed.</p>
+                </div>
+                <div class="col-md-4 feature-item">
+                    <h4>Actionable Tips</h4>
+                    <p>Improve your site with tailored advice.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Signup Section with Report Generation -->
+    <section id="signup" class="signup">
+        <h2>Test Your Website</h2>
+        <p>Enter a URL to see a sample SEO & performance report instantly!</p>
+        <form id="signup-form" onsubmit="fetchSEOData(event)">
+            <div class="form-group">
+                <label for="website">Website URL:</label>
+                <input type="url" id="website" name="website" required placeholder="https://nike.com">
+            </div>
+            <button type="submit" class="cta-button">Generate Report</button>
+        </form>
+        <div id="loading">Loading report, please wait...</div>
+        <div id="report-output"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>© 2025 SEO Insights Pro. Powered by Google PageSpeed Insights.</p>
+    </footer>
+
+    <!-- JavaScript for Fetching Real SEO Data -->
+    <script>
+        async function fetchSEOData(event) {
+            event.preventDefault();
+            const websiteInput = document.getElementById('website').value.trim();
+            const outputDiv = document.getElementById('report-output');
+            const loadingDiv = document.getElementById('loading');
+
+            // Validate URL
+            if (!websiteInput.startsWith('http://') && !websiteInput.startsWith('https://')) {
+                outputDiv.innerHTML = '<p style="color: red;">Please enter a valid URL starting with http:// or https:// (e.g., https://nike.com).</p>';
+                outputDiv.style.display = 'block';
+                return;
+            }
+
+            // Show loading message
+            outputDiv.style.display = 'none';
+            loadingDiv.style.display = 'block';
+
+            try {
+                // Fetch data from PageSpeed Insights API
+                const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(websiteInput)}&strategy=desktop`;
+                const response = await fetch(apiUrl, { 
+                    method: 'GET',
+                    timeout: 10000 // 10-second timeout
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status} - ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                // Check if data is valid
+                if (!data.lighthouseResult) {
+                    throw new Error('No valid data returned from API.');
+                }
+
+                // Extract real metrics
+                const fcp = data.lighthouseResult.audits['first-contentful-paint'].displayValue || 'N/A';
+                const speedIndex = data.lighthouseResult.audits['speed-index'].displayValue || 'N/A';
+                const mobileFriendly = data.lighthouseResult.categories['seo']?.score >= 0.9 ? 'Yes' : 'No';
+
+                // Generate SEO recommendation based on real data
+                const fcpSeconds = parseFloat(fcp) || 0;
+                const recommendation = fcpSeconds < 2 
+                    ? "Excellent! Your site loads quickly. Enhance SEO with more backlinks and optimized content."
+                    : "Optimize images, reduce server response time, or enable compression to improve load speed.";
+
+                // Create report HTML
+                const report = `
+                    <h3>SEO & Performance Report for ${websiteInput}</h3>
+                    <p><strong>First Contentful Paint:</strong> ${fcp}</p>
+                    <p><strong>Speed Index:</strong> ${speedIndex}</p>
+                    <p><strong>Mobile-Friendly:</strong> ${mobileFriendly}</p>
+                    <p><strong>Recommendation:</strong> ${recommendation}</p>
+                    <p><em>Powered by Google PageSpeed Insights, fetched on ${new Date().toLocaleDateString()}.</em></p>
+                `;
+
+                // Display report
+                outputDiv.innerHTML = report;
+                outputDiv.style.display = 'block';
+            } catch (error) {
+                outputDiv.innerHTML = `<p style="color: red;">Error: ${error.message}. Try a valid URL (e.g., https://nike.com) and ensure you're online.</p>`;
+                outputDiv.style.display = 'block';
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
